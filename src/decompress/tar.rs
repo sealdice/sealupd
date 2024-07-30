@@ -57,7 +57,7 @@ where
         let mut entry = entry?;
 
         let ename = entry.path()?;
-        if !is_safe_path(ename.components()) {
+        if suspicious_path(ename.components()) {
             Err(format!("unsafe entry: {:?}", ename))?;
         }
 
@@ -74,7 +74,7 @@ where
     Ok(())
 }
 
-fn is_safe_path(com: Components) -> bool {
+fn suspicious_path(com: Components) -> bool {
     com.into_iter()
         .any(|c| matches!(c, Component::ParentDir) || matches!(c, Component::RootDir))
 }

@@ -1,7 +1,10 @@
 [package]
-name = "sealupd"
+name    = "sealupd"
 version = "0.1.0"
 edition = "2021"
+
+[profile.release]
+strip = true
 
 [dependencies]
 # Command-line parser
@@ -11,11 +14,11 @@ clap = { version = "4.5.11", features = ["derive"] }
 sysinfo = "0.30.13"
 
 # Logging
-log = "0.4.22"
-fern = "0.6.2"
+log    = "0.4.22"
+fern   = "0.6.2"
 chrono = "0.4.38"
 
 # File archives
-zip = "2.1.5"
-tar = "0.4.41"
+zip    = "2.1.5"
+tar    = "0.4.41"
 flate2 = "1.0.30"

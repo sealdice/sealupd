@@ -7,7 +7,7 @@ use std::{
     path::Path,
 };
 
-use zip::result::ZipError;
+use ::zip::result::ZipError;
 
 mod tar;
 mod util;
