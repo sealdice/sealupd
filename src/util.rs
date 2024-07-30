@@ -44,7 +44,7 @@ pub fn backup_sealdice() -> Result<(), io::Error> {
 pub fn restart_sealdice() {
     use std::os::unix::{fs::PermissionsExt, process::CommandExt};
 
-    let dest = Path::new("./").join(EXE_NAME);
+    let dest = Path::new(".").join(EXE_NAME);
 
     match fs::set_permissions(&dest, PermissionsExt::from_mode(0o755)) {
         Ok(_) => info!("chmod 755 {:?}", dest),
@@ -68,6 +68,7 @@ pub fn restart_sealdice() {
     );
     thread::sleep(Duration::from_secs(2));
 
+    debug!("Launching with command {:?}", dest);
     let err = Command::new(dest).current_dir(Path::new("./")).exec();
     error!("Launching SealDice failed: {}", err);
     eprintln!("{}: {}", "Failed to start core".error(), err);
@@ -76,7 +77,7 @@ pub fn restart_sealdice() {
 
 #[cfg(target_family = "windows")]
 pub fn restart_sealdice() {
-    let dest = Path::new("./").join(EXE_NAME);
+    let dest = Path::new(".").join(EXE_NAME);
 
     if CLI_ARGS.skip_launch {
         info!("Exiting due to --skip flag");

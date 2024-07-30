@@ -32,7 +32,7 @@ fn main() {
         "Starting to decompress archive \"{}\"",
         CLI_ARGS.package.escape_debug()
     );
-    if let Err(err) = decompress::decompress(CLI_ARGS.package.as_str(), ".") {
+    if let Err(err) = decompress::decompress(CLI_ARGS.package.as_str(), "") {
         error!("Failed to decompress: {}", err);
         eprintln!("{}: {}\nExiting.", "Extraction failed".error(), err);
         util::graceful_exit(1);
