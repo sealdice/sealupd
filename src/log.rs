@@ -10,7 +10,7 @@ pub fn init_logger(disabled: bool) -> Result<String, InitError> {
         (LevelFilter::Off, String::new())
     } else {
         let date = Local::now().format("%F_%H%M%S").to_string();
-        (LevelFilter::Debug, format!("{}.txt", date))
+        (LevelFilter::Debug, format!("updater_{}.txt", date))
     };
 
     let cfg = Dispatch::new()
