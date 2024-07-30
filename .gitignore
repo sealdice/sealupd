@@ -1,0 +1,14 @@
+# Build folder
+/target
+
+# Test & generated files
+/test
+
+# IDE-generated files
+/.vscode
+/.idea
+
+# System config files
+.DS_Store
+Desktop.ini
+$RECYCLE.BIN
