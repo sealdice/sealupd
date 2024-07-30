@@ -4,7 +4,11 @@ version = "0.1.0"
 edition = "2021"
 
 [profile.release]
-strip = true
+strip         = true
+opt-level     = 'z'
+lto           = true
+codegen-units = 1
+panic         = "abort"
 
 [dependencies]
 # Command-line parser
@@ -25,8 +29,8 @@ flate2 = "1.0.30"
 
 
 [build-dependencies]
-# For static links on Windows
+# Static links on Windows
 static_vcruntime = "2.0.0"
 
-# For manifest files for 32-bit Windows
+# Manifest files for 32-bit Windows
 embed-manifest = "1.4.0"
