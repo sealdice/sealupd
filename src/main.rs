@@ -21,8 +21,12 @@ fn main() {
     }
 
     match util::backup_sealdice() {
-        Ok(_) => log::display_success("Old executable backed up."),
-        Err(err) => log::display_error("Backup of old executable failed", err),
+        Ok(done) => {
+            if done {
+                log::display_success("Old executable backed up.");
+            }
+        }
+        Err(err) => log::display_error("Backup old executable failed", err),
     }
 
     log::display_warn(&format!("Archive: \"{}\"", CLI_ARGS.package.escape_debug()));
