@@ -20,8 +20,8 @@ pub fn decompress<P>(src: P, dest: P) -> Result<(), Box<dyn Error>>
 where
     P: AsRef<Path>,
 {
-    let mut file =
-        File::open(src.as_ref()).map_err(|e| format!("open {:?}: {}", src.as_ref(), e))?;
+    let mut file = File::open(src.as_ref())
+        .map_err(|e| format!("open {:?}: {}", src.as_ref(), e))?;
     let dest = dest.as_ref();
 
     if let Err(err) = zip::decompress(&mut file, dest) {
