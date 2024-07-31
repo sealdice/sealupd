@@ -25,10 +25,12 @@ pub fn graceful_exit(code: i32) {
     process::exit(code);
 }
 
-pub fn backup_sealdice() -> Result<(), io::Error> {
+/// Copies existing executable to `sealdice-core_old` (Unix) or `sealdice-core.exe.old`
+/// (Windows), returning whether a copy is made or any error that occurs.
+pub fn backup_sealdice() -> Result<bool, io::Error> {
     let cwd = Path::new(".");
     if !cwd.join(EXE_NAME).exists() {
-        return Ok(());
+        return Ok(false);
     }
 
     let old = if cfg!(windows) {
@@ -37,7 +39,8 @@ pub fn backup_sealdice() -> Result<(), io::Error> {
         format!("{}_old", EXE_NAME)
     };
 
-    fs::rename(cwd.join(EXE_NAME), cwd.join(old))
+    fs::rename(cwd.join(EXE_NAME), cwd.join(old))?;
+    Ok(true)
 }
 
 /// Attempts to run `chmod 755` on `sealdice-core` and then start it. Exit the program
