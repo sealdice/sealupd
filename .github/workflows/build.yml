@@ -1,0 +1,90 @@
+name: Auto Build
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        os: [linux]
+        arch: [x86_64, aarch64]
+      fail-fast: true
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install aarch64 GCC
+        if: matrix.arch == 'aarch64'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+      - name: Get Nightly toolchain
+        run: rustup toolchain add nightly-x86_64-unknown-linux-gnu
+      - name: Add Nightly rust-src
+        run: rustup component add rust-src --toolchain nightly
+      - name: Add aarch64 target
+        if: matrix.arch == 'aarch64'
+        run: rustup target add aarch64-unknown-linux-gnu
+      - name: Run tests
+        run: cargo test --verbose
+      - name: Run build
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+        run: RUSTFLAGS="-Zlocation-detail=none -C target-feature=+crt-static" cargo +nightly build --verbose -Z build-std=std,panic_abort --target ${{matrix.arch}}-unknown-linux-gnu --release
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: seal-tool-${{matrix.os}}-${{matrix.arch}}
+          path: target/${{matrix.arch}}-unknown-linux-gnu/release/sealupd
+
+  build-macos:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        os: [darwin]
+        arch: [x86_64, aarch64]
+      fail-fast: true
+    steps:
+      - uses: actions/checkout@v3
+      - name: Get Nightly toolchain
+        run: rustup toolchain add nightly-aarch64-apple-darwin
+      - name: Add Nightly rust-src
+        run: rustup component add rust-src --toolchain nightly
+      - name: Run tests
+        run: cargo test --verbose
+      - name: Run build
+        run: RUSTFLAGS="-Zlocation-detail=none -C target-feature=+crt-static" cargo +nightly build --verbose -Z build-std=std,panic_abort --target ${{matrix.arch}}-apple-darwin --release
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: seal-tool-${{matrix.os}}-${{matrix.arch}}
+          path: target/${{matrix.arch}}-apple-darwin/release/sealupd
+
+  build-windows:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        os: [windows]
+        arch: [x86_64, i686]
+      fail-fast: true
+    steps:
+      - uses: actions/checkout@v3
+      - name: Add target
+        run: rustup target add ${{matrix.arch}}-pc-windows-msvc
+      - name: Run tests
+        run: cargo test --verbose
+      - name: Run build
+        run: |
+          set RUSTFLAGS=-C target-feature=+crt-static
+          cargo build --verbose --target ${{matrix.arch}}-pc-windows-msvc --release
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: seal-tool-${{matrix.os}}-${{matrix.arch}}
+          path: target/${{matrix.arch}}-pc-windows-msvc/release/sealupd.exe
