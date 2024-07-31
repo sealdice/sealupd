@@ -18,7 +18,7 @@ jobs:
         arch: [x86_64, aarch64]
       fail-fast: true
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Default to latest Rust
         run: |
           rustup install nightly
@@ -46,7 +46,7 @@ jobs:
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
         run: RUSTFLAGS="-Zlocation-detail=none -C target-feature=+crt-static" cargo +nightly build --verbose -Z build-std=std,panic_abort --target ${{matrix.arch}}-unknown-linux-gnu --release
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: sealupd-${{matrix.os}}-${{matrix.arch}}
           path: target/${{matrix.arch}}-unknown-linux-gnu/release/sealupd
@@ -59,7 +59,7 @@ jobs:
         arch: [x86_64, aarch64]
       fail-fast: true
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Default to latest Rust
         run: |
           rustup install nightly
@@ -75,7 +75,7 @@ jobs:
       - name: Run build
         run: RUSTFLAGS="-Zlocation-detail=none -C target-feature=+crt-static" cargo +nightly build --verbose -Z build-std=std,panic_abort --target ${{matrix.arch}}-apple-darwin --release
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: sealupd-${{matrix.os}}-${{matrix.arch}}
           path: target/${{matrix.arch}}-apple-darwin/release/sealupd
@@ -88,7 +88,7 @@ jobs:
         arch: [x86_64, i686]
       fail-fast: true
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Default to latest Rust
         run: |
           rustup install stable
@@ -104,7 +104,7 @@ jobs:
           set RUSTFLAGS=-C target-feature=+crt-static
           cargo build --verbose --target ${{matrix.arch}}-pc-windows-msvc --release
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: sealupd-${{matrix.os}}-${{matrix.arch}}
           path: target/${{matrix.arch}}-pc-windows-msvc/release/sealupd.exe
