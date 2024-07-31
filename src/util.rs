@@ -40,6 +40,8 @@ pub fn backup_sealdice() -> Result<(), io::Error> {
     fs::rename(cwd.join(EXE_NAME), cwd.join(old))
 }
 
+/// Attempts to run `chmod 755` on `sealdice-core` and then start it. Exit the program
+/// if anything goes wrong.
 #[cfg(target_family = "unix")]
 pub fn restart_sealdice() {
     use std::os::unix::{fs::PermissionsExt, process::CommandExt};
@@ -75,6 +77,7 @@ pub fn restart_sealdice() {
     graceful_exit(1);
 }
 
+/// Attempts to start `sealdice-core`. Exit the program if anything goes wrong.
 #[cfg(target_family = "windows")]
 pub fn restart_sealdice() {
     let dest = Path::new(".").join(EXE_NAME);

@@ -17,9 +17,9 @@ pub struct ColoredString {
 impl ColoredString {
     /// Creates a new [`ColoredString`] with an initial color code.
     /// If the code is 0, it will be ignored.
-    pub fn new(s: &str, code: i32) -> Self {
-        let mut vec = Vec::new();
-        if code != 0 {
+    pub fn new(s: &str, codes: &[i32]) -> Self {
+        let mut vec = Vec::with_capacity(codes.len());
+        for &code in codes {
             vec.push(code);
         }
 
@@ -29,8 +29,10 @@ impl ColoredString {
         }
     }
 
-    fn append_color(&mut self, code: i32) {
-        self.codes.push(code);
+    fn append_colors(&mut self, codes: &[i32]) {
+        for &code in codes {
+            self.codes.push(code);
+        }
     }
 }
 
@@ -63,31 +65,31 @@ pub trait Colorable {
 // Implementing for `&str` also implements for `String`.
 impl<'a> Colorable for &'a str {
     fn error(self) -> ColoredString {
-        ColoredString::new(self, 31)
+        ColoredString::new(self, &[31, 1])
     }
 
     fn warn(self) -> ColoredString {
-        ColoredString::new(self, 33)
+        ColoredString::new(self, &[33])
     }
 
     fn success(self) -> ColoredString {
-        ColoredString::new(self, 32)
+        ColoredString::new(self, &[32, 1])
     }
 }
 
 impl Colorable for ColoredString {
     fn error(mut self) -> ColoredString {
-        self.append_color(31);
+        self.append_colors(&[31, 1]);
         self
     }
 
     fn warn(mut self) -> ColoredString {
-        self.append_color(33);
+        self.append_colors(&[33]);
         self
     }
 
     fn success(mut self) -> ColoredString {
-        self.append_color(32);
+        self.append_colors(&[32, 1]);
         self
     }
 }

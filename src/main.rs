@@ -6,7 +6,7 @@ mod cli;
 mod consts;
 mod decompress;
 mod log;
-mod proc_wait;
+mod proc;
 mod term_color;
 mod util;
 
@@ -18,7 +18,7 @@ fn main() {
     if CLI_ARGS.pid != 0 {
         debug!("Starting to wait for process {}.", CLI_ARGS.pid);
         println!("Waiting for process {} to finish.", CLI_ARGS.pid);
-        proc_wait::wait(CLI_ARGS.pid);
+        proc::wait(CLI_ARGS.pid);
     }
 
     debug!("Backing up old sealdice-core.");
