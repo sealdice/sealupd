@@ -8,7 +8,7 @@ use std::{
 };
 
 use ::zip::result::ZipError;
-use log::info;
+use log::debug;
 
 mod tar;
 mod util;
@@ -29,7 +29,7 @@ where
             Err(format!("decompress zip: {}", err))?;
         }
 
-        info!("Invalid ZIP archive detected, falling back to tarball.");
+        debug!("Invalid ZIP archive detected, falling back to tarball.");
         file.seek(SeekFrom::Start(0))?;
         tar::decompress(file, dest).map_err(|e| format!("decompress tar: {}", e))?;
     }

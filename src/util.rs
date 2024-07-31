@@ -8,11 +8,11 @@ use std::{
     time::Duration,
 };
 
-use log::{debug, error, info};
+use ::log::{debug, info};
 
 use crate::{
     consts::{CLI_ARGS, EXE_NAME},
-    term_color::Colorable,
+    log,
 };
 
 /// Asks for user confirmation before exiting on Windows.
@@ -49,31 +49,25 @@ pub fn restart_sealdice() {
     let dest = Path::new(".").join(EXE_NAME);
 
     match fs::set_permissions(&dest, PermissionsExt::from_mode(0o755)) {
-        Ok(_) => info!("chmod 755 {:?}", dest),
+        Ok(_) => info!("Executed chmod 755 {:?}", dest),
         Err(err) => {
-            error!("Failed to set executable permission: {}", err);
-            eprintln!("{}: {}", "chmod error".error(), err);
+            log::display_error("chmod failure", err);
             graceful_exit(1);
         }
     }
 
     if CLI_ARGS.skip_launch {
-        info!("Exiting due to --skip flag");
-        println!("{}", "Exiting due to --skip flag".warn());
+        log::display_warn("SealDice will not be launched due to --skip-launch");
         graceful_exit(0);
     }
 
-    debug!("Sleep for 2 seconds, then starting SealDice.");
-    println!(
-        "{}",
-        "Everything is done, launching in 2 seconds ...".success()
-    );
+    log::display_success("Update completed, launching SealDice in a few seconds.");
+    log::display_warn("If SealDice is not run, check any console output and the update log, and refer the situation to the developers.");
     thread::sleep(Duration::from_secs(2));
 
     debug!("Launching with command {:?}", dest);
     let err = Command::new(dest).current_dir(Path::new("./")).exec();
-    error!("Launching SealDice failed: {}", err);
-    eprintln!("{}: {}", "Failed to start core".error(), err);
+    log::display_error("Launching failed", err);
     graceful_exit(1);
 }
 
@@ -83,16 +77,12 @@ pub fn restart_sealdice() {
     let dest = Path::new(".").join(EXE_NAME);
 
     if CLI_ARGS.skip_launch {
-        info!("Exiting due to --skip flag");
-        println!("{}", "Exiting due to --skip flag".warn());
+        log::display_warn("SealDice will not be launched due to --skip-launch");
         graceful_exit(0);
     }
 
-    debug!("Sleep for 2 seconds, then starting SealDice.");
-    println!(
-        "{}",
-        "Everything is done, launching in 2 seconds ...".success()
-    );
+    log::display_success("Update completed, launching SealDice in a few seconds.");
+    log::display_warn("If SealDice is not run, check any console output and the update log, and refer the situation to the developers.");
     thread::sleep(Duration::from_secs(2));
 
     let res = Command::new("cmd")
@@ -100,8 +90,7 @@ pub fn restart_sealdice() {
         .args(["/C", "start", "", &dest.to_string_lossy()])
         .spawn();
     if let Err(err) = res {
-        error!("Launching SealDice failed: {}", err);
-        eprintln!("{}: {}", "Failed to start core".error(), err);
+        log::display_error("Launching failed", err);
         graceful_exit(1);
     }
 }

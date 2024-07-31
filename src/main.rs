@@ -1,13 +1,13 @@
-use ::log::{debug, error, info};
+use ::log::debug;
+use color::{Colorable, ColoredString};
 use consts::CLI_ARGS;
-use term_color::Colorable;
 
 mod cli;
+mod color;
 mod consts;
 mod decompress;
 mod log;
 mod proc;
-mod term_color;
 mod util;
 
 fn main() {
@@ -16,38 +16,30 @@ fn main() {
     print_appinfo();
 
     if CLI_ARGS.pid != 0 {
-        debug!("Starting to wait for process {}.", CLI_ARGS.pid);
-        println!("Waiting for process {} to finish.", CLI_ARGS.pid);
+        log::display_info(&format!("Waiting process {} termination.", CLI_ARGS.pid));
         proc::wait(CLI_ARGS.pid);
     }
 
-    debug!("Backing up old sealdice-core.");
-    if let Err(err) = util::backup_sealdice() {
-        error!("Backing up old executable failed: {}", err);
-        eprintln!("{}: {}", "Backup failed".error(), err);
+    match util::backup_sealdice() {
+        Ok(_) => log::display_success("Old executable backed up."),
+        Err(err) => log::display_error("Backup of old executable failed", err),
     }
-    info!("Backup finished.");
-    println!("{}", "Backup finished.".success());
 
-    debug!(
-        "Starting to decompress archive \"{}\"",
-        CLI_ARGS.package.escape_debug()
-    );
+    log::display_warn(&format!("Archive: \"{}\"", CLI_ARGS.package.escape_debug()));
     if let Err(err) = decompress::decompress(CLI_ARGS.package.as_str(), "") {
-        error!("Failed to decompress: {}", err);
-        eprintln!("{}: {}\nExiting.", "Extraction failed".error(), err);
+        log::display_error("Decompression failed", err.as_ref());
         util::graceful_exit(1);
     }
-    info!("Decompression succeeded.");
-    println!("{}", "All files extracted.".success());
+    log::display_success("All files extracted.");
 
+    println!();
     util::restart_sealdice();
 }
 
 fn print_appinfo() {
     println!(
-        "{} v{} --- Updater for SealDice.",
-        env!("CARGO_PKG_NAME"),
+        ">>> {} v{}    Updater for SealDice. <<<",
+        ColoredString::new(env!("CARGO_PKG_NAME"), &[33, 1]),
         env!("CARGO_PKG_VERSION")
     );
 }
@@ -56,16 +48,11 @@ fn init_log() {
     match log::init_logger(CLI_ARGS.disable_log) {
         Ok(lname) => {
             if CLI_ARGS.disable_log {
-                println!(
-                    "{}",
-                    "No log will be produced due to --disable-log flag.".warn()
-                );
+                println!("{}", "Log disabled due to --disable-log flag.".warn());
                 return;
             }
-            println!("{}: {}", "Update log is stored at".warn(), lname);
+            println!("{}: {}", "Update log stored at".warn(), lname);
         }
-        Err(err) => {
-            eprintln!("{}: {}", "Failed to initialize log".error(), err);
-        }
+        Err(err) => eprintln!("{}: {}", "Failed to initialize log".error(), err),
     }
 }

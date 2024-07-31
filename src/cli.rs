@@ -2,6 +2,7 @@
 
 use clap::Parser;
 
+/// Defines the command-line arguments and flags this program can accept.
 #[derive(Parser, Debug)]
 #[command(version)]
 pub struct CliArgs {

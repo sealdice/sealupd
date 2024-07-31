@@ -2,6 +2,7 @@
 
 use std::{process, thread, time::Duration};
 
+use log::debug;
 use sysinfo::{Pid, ProcessRefreshKind, RefreshKind, System};
 
 /// Waits for the process with specified PID to finish. If the program is spawned
@@ -21,9 +22,12 @@ pub fn wait(pid: u32) {
         match sys.process(pid) {
             None => break,
             Some(proc) => {
-                if proc.name() == env!("CARGO_PKG_NAME") || prog_pid == pid {
+                let pname = proc.name();
+                debug!("Found process {} \"{}\"", pid, pname.escape_debug());
+                if pname == env!("CARGO_PKG_NAME") || prog_pid == pid {
                     break;
                 }
+
                 sys.refresh_processes();
                 prog_pid = Pid::from_u32(process::id());
                 thread::sleep(Duration::from_secs(1));
