@@ -8,8 +8,6 @@ use std::{
     time::Duration,
 };
 
-use ::log::{debug, info};
-
 use crate::{
     consts::{CLI_ARGS, EXE_NAME},
     log,

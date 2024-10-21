@@ -46,7 +46,11 @@ pub fn wait(pid: u32) {
                     break;
                 }
 
-                sys.refresh_processes_specifics(ProcessesToUpdate::All, specs.proc_refresh_kind);
+                sys.refresh_processes_specifics(
+                    ProcessesToUpdate::All,
+                    true,
+                    specs.proc_refresh_kind,
+                );
                 prog_pid = Pid::from_u32(process::id());
                 thread::sleep(Duration::from_secs(1));
             }

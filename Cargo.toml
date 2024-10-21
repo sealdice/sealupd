@@ -12,20 +12,20 @@
 
 [dependencies]
     # Command-line parser
-    clap = { version = "4.5.11", features = ["derive"] }
+    clap = { version = "4.5.20", features = ["derive"] }
 
     # System info
-    sysinfo = "0.31.2"
+    sysinfo = "0.32.0"
 
     # Logging
     log    = "0.4.22"
-    fern   = "0.6.2"
+    fern   = "0.7.0"
     chrono = "0.4.38"
 
     # File archives
-    zip    = "2.1.5"
-    tar    = "0.4.41"
-    flate2 = "1.0.30"
+    zip    = "2.2.0"
+    tar    = "0.4.42"
+    flate2 = "1.0.34"
 
 [build-dependencies]
     # Static links on Windows
