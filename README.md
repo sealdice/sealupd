@@ -15,7 +15,7 @@ For a full definition of acceptable arguments and flags, see `src/cli.rs`.
 
 ## Style Guides
 
-1. Use `cargo fmt` without any options to format the project. Do not use `rustfmt` as it formats on a per-file basis and removes disambiguate imports.
+1. Use `cargo fmt` with configurations speficied in `.rustfmt.toml` to format the project. Do not run `rustfmt` directly as it formats on a per-file basis and may remove disambiguate imports.
 
 2. Import types directly; prefer `File` instead of `std::fs::File` or `fs::File`, unless ambiguity forbids (`Error` and `io::Error`).
 
