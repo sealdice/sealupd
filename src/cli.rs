@@ -6,19 +6,24 @@ use clap::Parser;
 #[derive(Parser, Debug)]
 #[command(version)]
 pub struct CliArgs {
-    /// The update package
-    #[arg(long, short, alias = "upgrade")]
+    /// The update package.
+    #[arg(long, short)]
     pub package: String,
 
-    /// Caller's PID
+    /// If present and not zero, wait for the process with this PID
+    /// to terminate before proceeding.
     #[arg(long)]
     pub pid: u32,
 
-    /// Skip launching SealDice after updating
-    #[arg(long, alias = "skip")]
+    /// Skip launching SealDice after updating.
+    #[arg(long = "skip", short)]
     pub skip_launch: bool,
 
-    /// Produce no log for the update
+    /// Display more information.
     #[arg(long)]
-    pub disable_log: bool,
+    pub verbose: bool,
+
+    /// Produce no log file for the update.
+    #[arg(long)]
+    pub quiet: bool,
 }

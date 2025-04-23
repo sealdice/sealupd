@@ -1,59 +1,116 @@
-//! Provides [`wait`] to wait for the caller process to terminate.
+use core::time;
+use std::{
+    io,
+    path::Path,
+    process::{self, Command},
+    thread,
+};
 
-use std::{process, thread, time::Duration};
+use sysinfo::{Pid, ProcessRefreshKind, ProcessesToUpdate, System};
 
-use log::debug;
-use sysinfo::{Pid, ProcessRefreshKind, ProcessesToUpdate, RefreshKind, System};
+use crate::{
+    consts::{CLI_ARGS, EXE_NAME},
+    log::Logger,
+};
 
-struct RefreshSpecs {
-    refresh_kind: RefreshKind,
-    proc_refresh_kind: ProcessRefreshKind,
-}
+/// Waits for the process with given PID to terminate. Returns true if the process terminates
+/// or has the same PID with this process.
+pub fn wait_process(pid: u32, max_retries: usize, logger: &Logger) -> bool {
+    let target_pid = Pid::from_u32(pid);
+    let self_pid = Pid::from_u32(process::id());
 
-impl RefreshSpecs {
-    pub fn new() -> Self {
-        let proc_refresh_kind = ProcessRefreshKind::new();
-        RefreshSpecs {
-            refresh_kind: RefreshKind::new().with_processes(proc_refresh_kind),
-            proc_refresh_kind,
-        }
-    }
-}
-
-/// Waits for the process with specified PID to finish. If the program is spawned
-/// by that process, finishes waiting if the program has inherited the PID.
-pub fn wait(pid: u32) {
-    let pid = Pid::from_u32(pid);
-    let mut prog_pid = Pid::from_u32(process::id());
-    if prog_pid == pid {
-        return;
+    if self_pid == target_pid {
+        logger.batch_verbose("当前进程 ID 等于要等待的 ID, 推断进程已经继承.");
+        return true;
     }
 
-    let specs = RefreshSpecs::new();
-    let mut sys = System::new_with_specifics(specs.refresh_kind);
+    let pid_list = [target_pid];
+    let processes_to_update = ProcessesToUpdate::Some(&pid_list);
 
-    loop {
-        match sys.process(pid) {
-            None => break,
-            Some(proc) => {
-                let pname = proc.name();
-                debug!(
-                    "Found process {} \"{}\"",
-                    pid,
-                    pname.to_string_lossy().escape_debug()
-                );
-                if pname == env!("CARGO_PKG_NAME") || prog_pid == pid {
-                    break;
+    let mut sys = System::new();
+    sys.refresh_processes_specifics(processes_to_update, true, ProcessRefreshKind::nothing());
+
+    for i in 0..max_retries {
+        match sys.process(target_pid) {
+            None => {
+                logger.batch_verbose(format_args!("进程 {} 已不存在, 推断已经结束.", target_pid));
+                return true;
+            }
+            Some(process) => {
+                if process.pid() == self_pid {
+                    logger.batch_verbose("进程名称等于升级器名称, 推断进程已经继承.");
+                    return true;
                 }
 
-                sys.refresh_processes_specifics(
-                    ProcessesToUpdate::All,
-                    true,
-                    specs.proc_refresh_kind,
-                );
-                prog_pid = Pid::from_u32(process::id());
-                thread::sleep(Duration::from_secs(1));
+                let name = process.name();
+                logger.batch_verbose(format_args!(
+                    "找到进程 {}, 尝试次数 {}/{}",
+                    name.to_string_lossy(),
+                    i + 1,
+                    max_retries
+                ));
+
+                sys.refresh_processes(processes_to_update, true);
+                thread::sleep(time::Duration::from_secs(1));
             }
         }
     }
+
+    false
+}
+
+#[cfg(windows)]
+pub fn restart_sealdice(logger: &Logger) -> io::Result<()> {
+    if CLI_ARGS.skip_launch {
+        logger.batch_info("跳过重启主程序.");
+        return Ok(());
+    }
+
+    logger.batch_info("3 秒后尝试重启主程序. 跨进程指令出现的错误可能不会被记录.");
+    thread::sleep(time::Duration::from_secs(3));
+
+    let exe_path = Path::new("./").join(EXE_NAME);
+    let mut command = Command::new(exe_path);
+
+    command.spawn().map(|_| ())
+}
+
+#[cfg(unix)]
+pub fn restart_sealdice(logger: &Logger) -> io::Result<()> {
+    use std::{fs, os::unix::fs::PermissionsExt};
+
+    let exe_path = Path::new("./").join(EXE_NAME);
+
+    if cfg!(target_os = "macos") {
+        let output = Command::new("xattr")
+            .args(&["-rd", "com.apple.quarantine", EXE_NAME])
+            .output();
+        match output {
+            Err(err) => logger.batch_warn(format_args!("未能除去可执行文件隔离属性, 运行可能出错: {}", err)),
+            Ok(output) => {
+                if output.status.success() {
+                    logger.batch_success("成功除去可执行文件隔离属性");
+                } else {
+                    let err = String::from_utf8(output.stderr).unwrap_or(String::from("unknown"));
+                    logger.batch_warn(format_args!("未能除去可执行文件隔离属性, 运行可能出错: {}", err));
+                }
+            }
+        }
+    }
+
+    match fs::set_permissions(&exe_path, PermissionsExt::from_mode(0o755)) {
+        Ok(_) => logger.batch_info("成功设置可执行文件权限."),
+        Err(err) => logger.batch_warn(format_args!("设置可执行文件权限出错, 运行可能失败: {}", err)),
+    }
+
+    if CLI_ARGS.skip_launch {
+        logger.batch_info("跳过重启主程序.");
+        return Ok(());
+    }
+
+    logger.batch_info("3 秒后尝试重启主程序. 跨进程指令出现的错误可能不会被记录.");
+    thread::sleep(time::Duration::from_secs(3));
+
+    let mut command = Command::new(exe_path);
+    command.spawn().map(|_| ())
 }

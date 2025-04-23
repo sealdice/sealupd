@@ -1,35 +1,34 @@
 [package]
-    name    = "sealupd"
-    version = "0.1.0"
-    edition = "2021"
+name = "sealupd"
+version = "0.1.7"
+edition = "2024"
 
 [profile.release]
-    strip         = true
-    opt-level     = 'z'
-    lto           = true
-    codegen-units = 1
-    panic         = "abort"
+strip = true
+opt-level = 'z'
+lto = true
+codegen-units = 1
+panic = "abort"
 
 [dependencies]
-    # Command-line parser
-    clap = { version = "4.5.20", features = ["derive"] }
+# Command-line parser
+clap = { version = "4.5.37", features = ["derive"] }
 
-    # System info
-    sysinfo = "0.32.0"
+# System info
+sysinfo = "0.34.2"
 
-    # Logging
-    log    = "0.4.22"
-    fern   = "0.7.0"
-    chrono = "0.4.38"
+# Logging
+log = "0.4.27"
+fern = "0.7.1"
+chrono = "0.4.40"
 
-    # File archives
-    zip    = "2.2.0"
-    tar    = "0.4.42"
-    flate2 = "1.0.34"
+# File archives
+zip = "2.6.1"
+tar = "0.4.44"
+flate2 = "1.1.1"
 
 [build-dependencies]
-    # Static links on Windows
-    static_vcruntime = "2.0.0"
-
-    # Manifest files for 32-bit Windows
-    embed-manifest = "1.4.0"
+# Static links on Windows
+static_vcruntime = "2.0.0"
+# Manifest files for 32-bit Windows
+embed-manifest = "1.4.0"
