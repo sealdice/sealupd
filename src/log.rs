@@ -28,7 +28,7 @@ impl Logger {
 
     pub fn console_success<D: fmt::Display>(&self, message: D) {
         let header: &str = if *IS_ASCII_SUPPORTED { "\x1b[1;32mO\x1b[0m" } else { "O" };
-        self.console_write(&self.stderr, format_args!("{} {}\n", header, message));
+        self.console_write(&self.stdout, format_args!("{} {}\n", header, message));
     }
 
     pub fn console_warn<D: fmt::Display>(&self, message: D) {
@@ -36,10 +36,14 @@ impl Logger {
         self.console_write(&self.stderr, format_args!("{} {}\n", header, message));
     }
 
+    pub fn console_info<D: fmt::Display>(&self, message: D) {
+        self.console_write(&self.stderr, format_args!("{}\n", message));
+    }
+
     /// No-op if CLI_ARGS.verbose is false.
     pub fn console_verbose<D: fmt::Display>(&self, message: D) {
         if CLI_ARGS.verbose {
-            self.console_write(&self.stderr, format_args!("{}\n", message));
+            self.console_write(&self.stdout, format_args!("{}\n", message));
         }
     }
 
@@ -59,7 +63,7 @@ impl Logger {
     }
 
     pub fn batch_info<D: fmt::Display>(&self, message: D) {
-        self.console_verbose(&message);
+        self.console_info(&message);
         self.file_info(message);
     }
 

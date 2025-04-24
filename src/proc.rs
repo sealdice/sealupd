@@ -20,7 +20,7 @@ pub fn wait_process(pid: u32, max_retries: usize, logger: &Logger) -> bool {
     let self_pid = Pid::from_u32(process::id());
 
     if self_pid == target_pid {
-        logger.batch_verbose("当前进程 ID 等于要等待的 ID, 推断进程已经继承.");
+        logger.batch_verbose("当前进程 ID 等于要等待的 ID, 推断进程已经继承");
         return true;
     }
 
@@ -33,12 +33,12 @@ pub fn wait_process(pid: u32, max_retries: usize, logger: &Logger) -> bool {
     for i in 0..max_retries {
         match sys.process(target_pid) {
             None => {
-                logger.batch_verbose(format_args!("进程 {} 已不存在, 推断已经结束.", target_pid));
+                logger.batch_verbose(format_args!("进程 {} 已不存在, 推断已经结束", target_pid));
                 return true;
             }
             Some(process) => {
                 if process.pid() == self_pid {
-                    logger.batch_verbose("进程名称等于升级器名称, 推断进程已经继承.");
+                    logger.batch_verbose("进程名称等于升级器名称, 推断进程已经继承");
                     return true;
                 }
 
@@ -62,11 +62,11 @@ pub fn wait_process(pid: u32, max_retries: usize, logger: &Logger) -> bool {
 #[cfg(windows)]
 pub fn restart_sealdice(logger: &Logger) -> io::Result<()> {
     if CLI_ARGS.skip_launch {
-        logger.batch_info("跳过重启主程序.");
+        logger.batch_info("跳过重启主程序");
         return Ok(());
     }
 
-    logger.batch_info("3 秒后尝试重启主程序. 跨进程指令出现的错误可能不会被记录.");
+    logger.batch_info("3 秒后尝试重启主程序. 跨进程指令出现的错误可能不会被记录");
     thread::sleep(time::Duration::from_secs(3));
 
     let exe_path = Path::new("./").join(EXE_NAME);
@@ -99,16 +99,16 @@ pub fn restart_sealdice(logger: &Logger) -> io::Result<()> {
     }
 
     match fs::set_permissions(&exe_path, PermissionsExt::from_mode(0o755)) {
-        Ok(_) => logger.batch_info("成功设置可执行文件权限."),
+        Ok(_) => logger.batch_info("成功设置可执行文件权限"),
         Err(err) => logger.batch_warn(format_args!("设置可执行文件权限出错, 运行可能失败: {}", err)),
     }
 
     if CLI_ARGS.skip_launch {
-        logger.batch_info("跳过重启主程序.");
+        logger.batch_info("跳过重启主程序");
         return Ok(());
     }
 
-    logger.batch_info("3 秒后尝试重启主程序. 跨进程指令出现的错误可能不会被记录.");
+    logger.batch_info("3 秒后尝试重启主程序. 跨进程指令出现的错误可能不会被记录");
     thread::sleep(time::Duration::from_secs(3));
 
     let mut command = Command::new(exe_path);

@@ -20,22 +20,23 @@ fn main() {
 fn run() -> i32 {
     let logger = Logger::new();
     init_logger(&logger);
-    logger.console_success("终端日志开始记录.");
+    logger.console_success("终端日志开始记录");
 
     if CLI_ARGS.pid != 0 {
-        logger.batch_info(format_args!("等待进程 {} 退出.", CLI_ARGS.pid));
+        logger.batch_verbose(format_args!("等待进程 {} 退出", CLI_ARGS.pid));
         if !proc::wait_process(CLI_ARGS.pid, 30, &logger) {
-            logger.batch_error("经等待进程仍未退出, 为避免错误, 中止操作.");
+            logger.batch_error("经等待进程仍未退出, 为避免错误, 中止操作");
             return 1;
         }
+        logger.batch_success("进程成功退出, 继续操作");
     }
 
     match decompress::backup_sealdice() {
         Ok(exists) => {
             if exists {
-                logger.batch_success("已经备份可执行文件.");
+                logger.batch_success("已经备份可执行文件");
             } else {
-                logger.batch_info("可执行文件不存在, 跳过备份.");
+                logger.batch_info("可执行文件不存在, 跳过备份");
             }
         }
         Err(err) => {
@@ -44,7 +45,7 @@ fn run() -> i32 {
         }
     }
 
-    logger.batch_info(format_args!("尝试解压 '{}'.", CLI_ARGS.package));
+    logger.batch_info(format_args!("尝试解压 '{}'", CLI_ARGS.package));
     match decompress::decompress(&logger) {
         Ok(entry_count) => logger.batch_success(format_args!("解压成功, 共计 {} 条目", entry_count)),
         Err(err) => {
@@ -63,15 +64,15 @@ fn run() -> i32 {
 
 fn init_logger(logger: &Logger) {
     if CLI_ARGS.quiet {
-        logger.console_verbose("日志文件已关闭.");
+        logger.console_verbose("日志文件已关闭");
         return;
     }
 
     match log::init_logger(CLI_ARGS.quiet) {
         Ok(file_name) => {
-            logger.console_verbose(format_args!("已创建日志文件 '{}'.", file_name));
-            logger.file_info("文件日志开始记录.");
+            logger.console_verbose(format_args!("已创建日志文件 '{}'", file_name));
+            logger.file_info("文件日志开始记录");
         }
-        Err(err) => logger.console_warn(format_args!("无法创建文件日志: {}.", err)),
+        Err(err) => logger.console_warn(format_args!("无法创建文件日志: {}", err)),
     }
 }
