@@ -5,6 +5,7 @@ on:
     branches: [master, main]
   pull_request:
     branches: [master, main]
+  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
@@ -108,3 +109,59 @@ jobs:
         with:
           name: sealupd-${{matrix.os}}-${{matrix.arch}}
           path: target/${{matrix.arch}}-pc-windows-msvc/release/sealupd.exe
+
+  create-release:
+    if: github.event_name == 'workflow_dispatch'
+    needs:
+      - build-linux
+      - build-macos
+      - build-windows
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract version
+        id: version
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import pathlib
+          import re
+
+          text = pathlib.Path('Cargo.toml').read_text(encoding='utf-8')
+          match = re.search(r'^version\s*=\s*"([^"]+)"', text, re.MULTILINE)
+          if not match:
+              raise SystemExit('Version not found in Cargo.toml')
+          print(f'version={match.group(1)}')
+          PY
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Package assets
+        run: |
+          set -euo pipefail
+          mkdir -p release
+          for dir in artifacts/*; do
+            name="$(basename "$dir")"
+            if [ -f "$dir/sealupd.exe" ]; then
+              cp "$dir/sealupd.exe" "release/${name}.exe"
+              (cd release && zip -j "${name}.zip" "${name}.exe")
+              rm "release/${name}.exe"
+            elif [ -f "$dir/sealupd" ]; then
+              cp "$dir/sealupd" "release/${name}"
+              chmod +x "release/${name}"
+              tar -C release -czf "release/${name}.tar.gz" "${name}"
+              rm "release/${name}"
+            fi
+          done
+      - name: Publish release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Sealupd v${{ steps.version.outputs.version }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: release/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
