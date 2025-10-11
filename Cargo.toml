@@ -1,6 +1,6 @@
 [package]
 name = "sealupd"
-version = "0.1.7"
+version = "0.1.8"
 edition = "2024"
 
 [profile.release]
@@ -12,23 +12,23 @@ panic = "abort"
 
 [dependencies]
 # Command-line parser
-clap = { version = "4.5.37", features = ["derive"] }
+clap = { version = "4.5.48", features = ["derive"] }
 
 # System info
-sysinfo = "0.34.2"
+sysinfo = "0.37.2"
 
 # Logging
-log = "0.4.27"
+log = "0.4.28"
 fern = "0.7.1"
-chrono = "0.4.40"
+chrono = "0.4.42"
 
-# File archives
-zip = "2.6.1"
+# Archive management
+zip = "6.0.0"
 tar = "0.4.44"
-flate2 = "1.1.1"
+flate2 = "1.1.4"
 
-[build-dependencies]
-# Static links on Windows
+[target.'cfg(windows)'.build-dependencies]
+# Static linking on Windows
 static_vcruntime = "2.0.0"
 # Manifest files for 32-bit Windows
 embed-manifest = "1.4.0"
