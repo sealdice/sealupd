@@ -7,7 +7,7 @@ use clap::Parser;
 #[command(version)]
 pub struct CliArgs {
     /// The update package.
-    #[arg(long, short)]
+    #[arg(long, short, alias = "upgrade")]
     pub package: String,
 
     /// If present and not zero, wait for the process with this PID
