@@ -24,7 +24,7 @@ chrono = "0.4.42"
 
 # Archive management
 zip = "6.0.0"
-tar = "0.4.44"
+tar = "0.4.45"
 flate2 = "1.1.4"
 
 [target.'cfg(windows)'.build-dependencies]
