@@ -9,7 +9,7 @@ use tar::Archive as TarArchive;
 use zip::ZipArchive;
 
 use crate::{
-    consts::{CLI_ARGS, EXE_NAME, UPDATER_NAME},
+    consts::{CLI_ARGS, UPDATER_NAME},
     log::Logger,
 };
 use error::DecompressError;
@@ -17,15 +17,15 @@ use error::DecompressError;
 mod error;
 
 pub fn backup_sealdice() -> io::Result<bool> {
-    let exe_path = Path::new(EXE_NAME);
+    let exe_path = Path::new(&CLI_ARGS.binary_name);
     if !exe_path.exists() {
         return Ok(false);
     }
 
     let old_name = if cfg!(windows) {
-        format!("{}.old", EXE_NAME)
+        format!("{}.old", CLI_ARGS.binary_name)
     } else {
-        format!("{}_old", EXE_NAME)
+        format!("{}_old", CLI_ARGS.binary_name)
     };
 
     fs::rename(exe_path, &old_name)?;

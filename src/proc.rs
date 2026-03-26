@@ -8,10 +8,7 @@ use std::{
 
 use sysinfo::{Pid, ProcessRefreshKind, ProcessesToUpdate, System};
 
-use crate::{
-    consts::{CLI_ARGS, EXE_NAME},
-    log::Logger,
-};
+use crate::{consts::CLI_ARGS, log::Logger};
 
 /// Waits for the process with given PID to terminate. Returns true if the process terminates
 /// or has the same PID with this process.
@@ -69,7 +66,7 @@ pub fn restart_sealdice(logger: &Logger) -> io::Result<()> {
     logger.batch_info("3 秒后尝试重启主程序. 跨进程指令出现的错误可能不会被记录");
     thread::sleep(time::Duration::from_secs(3));
 
-    let exe_path = Path::new("./").join(EXE_NAME);
+    let exe_path = Path::new("./").join(&CLI_ARGS.binary_name);
     let mut command = Command::new(exe_path);
 
     command.spawn().map(|_| ())
@@ -79,11 +76,11 @@ pub fn restart_sealdice(logger: &Logger) -> io::Result<()> {
 pub fn restart_sealdice(logger: &Logger) -> io::Result<()> {
     use std::{fs, os::unix::fs::PermissionsExt};
 
-    let exe_path = Path::new("./").join(EXE_NAME);
+    let exe_path = Path::new("./").join(&CLI_ARGS.binary_name);
 
     if cfg!(target_os = "macos") {
         let output = Command::new("xattr")
-            .args(&["-rd", "com.apple.quarantine", EXE_NAME])
+            .args(&["-rd", "com.apple.quarantine", CLI_ARGS.binary_name.as_str()])
             .output();
         match output {
             Err(err) => logger.batch_warn(format_args!("未能除去可执行文件隔离属性, 运行可能出错: {}", err)),

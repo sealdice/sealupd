@@ -4,7 +4,7 @@ Updater for [SealDice], successor of [seal-updater].
 
 # Usage
 
-The program accepts two principal arguments: `--package` (short `-p`, alias `--upgrade`) and `--pid`. It waits for the process with the specified PID to terminate before extracting files from the provided package into the current directory. Finally, it tries to start the executable named `sealdice-core` or `sealdice-core.exe` unless the `--skip-launch` flag is set.
+The program accepts three principal arguments: `--package` (short `-p`, alias `--upgrade`), `--binary-name` (short `-b`, alias `--binary`), and `--pid`. It waits for the process with the specified PID to terminate before extracting files from the provided package into the current directory. Finally, it tries to start the executable named by `--binary-name` unless the `--skip-launch` flag is set. If `--binary-name` is omitted, it defaults to `sealdice-core` or `sealdice-core.exe` depending on the platform.
 
 For a full definition of acceptable arguments and flags, see `src/cli.rs`.
 

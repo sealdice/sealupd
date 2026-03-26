@@ -2,6 +2,8 @@
 
 use clap::Parser;
 
+use crate::consts::EXE_NAME;
+
 /// Defines the command-line arguments and flags this program can accept.
 #[derive(Parser, Debug)]
 #[command(version)]
@@ -9,6 +11,10 @@ pub struct CliArgs {
     /// The update package.
     #[arg(long, short, alias = "upgrade")]
     pub package: String,
+
+    /// Name of the main executable in the current directory.
+    #[arg(long = "binary-name", short = 'b', alias = "binary", default_value = EXE_NAME, value_name = "FILE")]
+    pub binary_name: String,
 
     /// If present and not zero, wait for the process with this PID
     /// to terminate before proceeding.
