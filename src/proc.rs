@@ -6,6 +6,9 @@ use std::{
     thread,
 };
 
+#[cfg(windows)]
+use std::{env, fs};
+
 use sysinfo::{Pid, ProcessRefreshKind, ProcessesToUpdate, System};
 
 use crate::{consts::CLI_ARGS, log::Logger};
@@ -57,6 +60,66 @@ pub fn wait_process(pid: u32, max_retries: usize, logger: &Logger) -> bool {
 }
 
 #[cfg(windows)]
+pub fn stop_local_yogurt(logger: &Logger) -> io::Result<usize> {
+    let target_path = env::current_dir()?.join("milky").join("yogurt.exe");
+    let target_path = match fs::canonicalize(&target_path) {
+        Ok(path) => path,
+        Err(err) if err.kind() == io::ErrorKind::NotFound => return Ok(0),
+        Err(err) => return Err(err),
+    };
+
+    let mut sys = System::new_all();
+    let pids: Vec<Pid> = sys
+        .processes()
+        .iter()
+        .filter_map(|(pid, process)| {
+            let exe_path = process.exe()?;
+            let exe_path = fs::canonicalize(exe_path).ok()?;
+            is_same_windows_path(&exe_path, &target_path).then_some(*pid)
+        })
+        .collect();
+
+    for pid in &pids {
+        logger.batch_warn(format_args!("发现仍在运行的内置 Milky 进程 {}, 尝试结束", pid));
+        let Some(process) = sys.process(*pid) else {
+            continue;
+        };
+        if !process.kill() {
+            return Err(io::Error::other(format!("无法结束内置 Milky 进程 {}", pid)));
+        }
+    }
+
+    if pids.is_empty() {
+        return Ok(0);
+    }
+
+    let processes_to_update = ProcessesToUpdate::Some(&pids);
+    for _ in 0..50 {
+        sys.refresh_processes(processes_to_update, true);
+        if pids.iter().all(|pid| sys.process(*pid).is_none()) {
+            return Ok(pids.len());
+        }
+        thread::sleep(time::Duration::from_millis(100));
+    }
+
+    let remaining = pids
+        .iter()
+        .filter(|pid| sys.process(**pid).is_some())
+        .map(ToString::to_string)
+        .collect::<Vec<_>>()
+        .join(", ");
+    Err(io::Error::new(
+        io::ErrorKind::TimedOut,
+        format!("等待内置 Milky 进程退出超时: {}", remaining),
+    ))
+}
+
+#[cfg(windows)]
+fn is_same_windows_path(left: &Path, right: &Path) -> bool {
+    left.to_string_lossy().eq_ignore_ascii_case(&right.to_string_lossy())
+}
+
+#[cfg(windows)]
 pub fn restart_sealdice(logger: &Logger) -> io::Result<()> {
     if CLI_ARGS.skip_launch {
         logger.batch_info("跳过重启主程序");
@@ -70,6 +133,28 @@ pub fn restart_sealdice(logger: &Logger) -> io::Result<()> {
     let mut command = Command::new(exe_path);
 
     command.spawn().map(|_| ())
+}
+
+#[cfg(all(test, windows))]
+mod tests {
+    use super::is_same_windows_path;
+    use std::path::Path;
+
+    #[test]
+    fn windows_path_comparison_is_case_insensitive() {
+        assert!(is_same_windows_path(
+            Path::new(r"C:\SealDice\milky\yogurt.exe"),
+            Path::new(r"c:\sealdice\MILKY\YOGURT.EXE"),
+        ));
+    }
+
+    #[test]
+    fn windows_path_comparison_rejects_other_directories() {
+        assert!(!is_same_windows_path(
+            Path::new(r"C:\SealDice\milky\yogurt.exe"),
+            Path::new(r"C:\OtherSealDice\milky\yogurt.exe"),
+        ));
+    }
 }
 
 #[cfg(unix)]

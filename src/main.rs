@@ -31,6 +31,16 @@ fn run() -> i32 {
         logger.batch_success("进程成功退出, 继续操作");
     }
 
+    #[cfg(windows)]
+    match proc::stop_local_yogurt(&logger) {
+        Ok(0) => logger.batch_verbose("未发现仍在运行的内置 Milky 进程"),
+        Ok(count) => logger.batch_success(format_args!("已经结束 {} 个内置 Milky 进程", count)),
+        Err(err) => {
+            logger.batch_error(format_args!("结束内置 Milky 进程失败, 为避免错误, 中止操作: {}", err));
+            return 1;
+        }
+    }
+
     match decompress::backup_sealdice() {
         Ok(exists) => {
             if exists {
