@@ -1,9 +1,9 @@
-use core::time;
 use std::{
     io,
     path::Path,
     process::{self, Command},
     thread,
+    time::Duration,
 };
 
 #[cfg(windows)]
@@ -13,8 +13,8 @@ use sysinfo::{Pid, ProcessRefreshKind, ProcessesToUpdate, System};
 
 use crate::{consts::CLI_ARGS, log::Logger};
 
-/// Waits for the process with given PID to terminate. Returns true if the process terminates
-/// or has the same PID with this process.
+/// Waits for the process with the given PID to terminate. Returns true if the process terminates
+/// or the target PID belongs to this process.
 pub fn wait_process(pid: u32, max_retries: usize, logger: &Logger) -> bool {
     let target_pid = Pid::from_u32(pid);
     let self_pid = Pid::from_u32(process::id());
@@ -28,35 +28,29 @@ pub fn wait_process(pid: u32, max_retries: usize, logger: &Logger) -> bool {
     let processes_to_update = ProcessesToUpdate::Some(&pid_list);
 
     let mut sys = System::new();
-    sys.refresh_processes_specifics(processes_to_update, true, ProcessRefreshKind::nothing());
+    let mut retries = 0;
 
-    for i in 0..max_retries {
-        match sys.process(target_pid) {
-            None => {
-                logger.batch_verbose(format_args!("进程 {} 已不存在, 推断已经结束", target_pid));
-                return true;
-            }
-            Some(process) => {
-                if process.pid() == self_pid {
-                    logger.batch_verbose("进程名称等于升级器名称, 推断进程已经继承");
-                    return true;
-                }
+    loop {
+        sys.refresh_processes_specifics(processes_to_update, true, ProcessRefreshKind::nothing());
 
-                let name = process.name();
-                logger.batch_verbose(format_args!(
-                    "找到进程 {}, 尝试次数 {}/{}",
-                    name.to_string_lossy(),
-                    i + 1,
-                    max_retries
-                ));
+        let Some(process) = sys.process(target_pid) else {
+            logger.batch_verbose(format_args!("进程 {} 已不存在, 推断已经结束", target_pid));
+            return true;
+        };
 
-                sys.refresh_processes(processes_to_update, true);
-                thread::sleep(time::Duration::from_secs(1));
-            }
+        if retries == max_retries {
+            return false;
         }
-    }
 
-    false
+        retries += 1;
+        logger.batch_verbose(format_args!(
+            "找到进程 {}, 尝试次数 {}/{}",
+            process.name().to_string_lossy(),
+            retries,
+            max_retries
+        ));
+        thread::sleep(Duration::from_secs(1));
+    }
 }
 
 #[cfg(windows)]
@@ -99,7 +93,7 @@ pub fn stop_local_yogurt(logger: &Logger) -> io::Result<usize> {
         if pids.iter().all(|pid| sys.process(*pid).is_none()) {
             return Ok(pids.len());
         }
-        thread::sleep(time::Duration::from_millis(100));
+        thread::sleep(Duration::from_millis(100));
     }
 
     let remaining = pids
@@ -127,12 +121,10 @@ pub fn restart_sealdice(logger: &Logger) -> io::Result<()> {
     }
 
     logger.batch_info("3 秒后尝试重启主程序. 跨进程指令出现的错误可能不会被记录");
-    thread::sleep(time::Duration::from_secs(3));
+    thread::sleep(Duration::from_secs(3));
 
     let exe_path = Path::new("./").join(&CLI_ARGS.binary_name);
-    let mut command = Command::new(exe_path);
-
-    command.spawn().map(|_| ())
+    Command::new(exe_path).spawn().map(|_| ())
 }
 
 #[cfg(all(test, windows))]
@@ -165,7 +157,7 @@ pub fn restart_sealdice(logger: &Logger) -> io::Result<()> {
 
     if cfg!(target_os = "macos") {
         let output = Command::new("xattr")
-            .args(&["-rd", "com.apple.quarantine", CLI_ARGS.binary_name.as_str()])
+            .args(["-rd", "com.apple.quarantine", CLI_ARGS.binary_name.as_str()])
             .output();
         match output {
             Err(err) => logger.batch_warn(format_args!("未能除去可执行文件隔离属性, 运行可能出错: {}", err)),
@@ -191,8 +183,7 @@ pub fn restart_sealdice(logger: &Logger) -> io::Result<()> {
     }
 
     logger.batch_info("3 秒后尝试重启主程序. 跨进程指令出现的错误可能不会被记录");
-    thread::sleep(time::Duration::from_secs(3));
+    thread::sleep(Duration::from_secs(3));
 
-    let mut command = Command::new(exe_path);
-    command.spawn().map(|_| ())
+    Command::new(exe_path).spawn().map(|_| ())
 }

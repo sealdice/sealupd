@@ -78,7 +78,7 @@ fn init_logger(logger: &Logger) {
         return;
     }
 
-    match log::init_logger(CLI_ARGS.quiet) {
+    match log::init_logger() {
         Ok(file_name) => {
             logger.console_verbose(format_args!("已创建日志文件 '{}'", file_name));
             logger.file_info("文件日志开始记录");

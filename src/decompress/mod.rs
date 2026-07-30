@@ -37,11 +37,7 @@ pub fn decompress(logger: &Logger) -> Result<usize, DecompressError> {
     let package_path = Path::new(&CLI_ARGS.package);
     let mut file = File::open(package_path)?;
 
-    let is_zip = package_path
-        .extension()
-        .and_then(|os_str| os_str.to_str())
-        .unwrap_or("gz")
-        .eq("zip");
+    let is_zip = package_path.extension().and_then(|extension| extension.to_str()) == Some("zip");
 
     if is_zip {
         decompress_zip(&mut file, logger)
@@ -50,7 +46,7 @@ pub fn decompress(logger: &Logger) -> Result<usize, DecompressError> {
     }
 }
 
-fn make_file<R: Read>(mut src: R, dest: &Path) -> Result<(), io::Error> {
+fn make_file<R: Read>(mut src: R, dest: &Path) -> io::Result<()> {
     if let Some(parent) = dest.parent() {
         fs::create_dir_all(parent)?;
     }
@@ -76,7 +72,7 @@ fn decompress_zip<R: Read + Seek>(mut file: R, logger: &Logger) -> Result<usize,
         let mut entry = archive.by_index(index)?;
         let entry_name = entry
             .enclosed_name()
-            .ok_or(DecompressError::SlipError(entry.name().to_owned()))?;
+            .ok_or(DecompressError::Slip(entry.name().to_owned()))?;
 
         let mut dest = PathBuf::new();
         if entry_name == updater_path {
@@ -96,8 +92,8 @@ struct SeekableTarball<R: Read + Seek> {
 }
 
 impl<R: Read + Seek> SeekableTarball<R> {
-    pub fn new(inner: R) -> SeekableTarball<R> {
-        SeekableTarball { inner }
+    pub fn new(inner: R) -> Self {
+        Self { inner }
     }
 
     pub fn count(&mut self) -> io::Result<usize> {
@@ -117,8 +113,8 @@ impl<R: Read + Seek> SeekableTarball<R> {
 }
 
 /// Upon success, return the count of entries decompressed.
-fn decompress_tarball<R: Read + Seek>(mut reader: R, logger: &Logger) -> Result<usize, DecompressError> {
-    let mut archive = SeekableTarball::new(&mut reader);
+fn decompress_tarball<R: Read + Seek>(reader: R, logger: &Logger) -> Result<usize, DecompressError> {
+    let mut archive = SeekableTarball::new(reader);
     let entry_count = archive.count()?;
 
     let updater_path = Path::new(UPDATER_NAME);
@@ -131,8 +127,8 @@ fn decompress_tarball<R: Read + Seek>(mut reader: R, logger: &Logger) -> Result<
         let entry_name = entry.path()?;
 
         if is_suspicious_path(entry_name.components()) {
-            let p = String::from(entry_name.to_string_lossy());
-            return Err(DecompressError::SlipError(p));
+            let p = entry_name.to_string_lossy().into_owned();
+            return Err(DecompressError::Slip(p));
         }
 
         let mut dest = PathBuf::new();

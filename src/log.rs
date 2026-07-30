@@ -14,8 +14,8 @@ pub struct Logger {
 }
 
 impl Logger {
-    pub fn new() -> Logger {
-        Logger {
+    pub fn new() -> Self {
+        Self {
             stderr: io::stderr(),
             stdout: io::stdout(),
         }
@@ -74,39 +74,35 @@ impl Logger {
     }
 
     pub fn file_error<D: fmt::Display>(&self, message: D) {
-        error!("{}", message);
+        error!("{message}");
     }
 
     pub fn file_info<D: fmt::Display>(&self, message: D) {
-        info!("{}", message);
+        info!("{message}");
     }
 
     pub fn file_warn<D: fmt::Display>(&self, message: D) {
-        warn!("{}", message);
+        warn!("{message}");
     }
 
     /// No-op if CLI_ARGS.verbose is false.
     pub fn file_verbose<D: fmt::Display>(&self, message: D) {
         if CLI_ARGS.verbose {
-            debug!("{}", message);
+            debug!("{message}");
         }
     }
 
     fn console_write<W: io::Write, D: fmt::Display>(&self, mut device: W, message: D) {
-        _ = write!(device, "{}", message);
+        _ = write!(device, "{message}");
     }
 }
 
 /// Initializes the file logger. Upon success, the log file's name is returned.
-pub fn init_logger(disabled: bool) -> Result<String, fern::InitError> {
-    let (level_filter, log_name) = if disabled {
-        (LevelFilter::Off, String::new())
-    } else {
-        let date = Local::now().format("%y%m%d_%H%M%S").to_string();
-        (LevelFilter::Debug, format!("updater_{}.txt", date))
-    };
+pub fn init_logger() -> Result<String, fern::InitError> {
+    let date = Local::now().format("%y%m%d_%H%M%S");
+    let log_name = format!("updater_{date}.txt");
 
-    let cfg = Dispatch::new()
+    Dispatch::new()
         .format(|out, msg, rec| {
             out.finish(format_args!(
                 "{} [{}] {}",
@@ -115,13 +111,9 @@ pub fn init_logger(disabled: bool) -> Result<String, fern::InitError> {
                 msg
             ))
         })
-        .level(level_filter);
-
-    if !disabled {
-        cfg.chain(fern::log_file(&log_name)?).apply()?;
-    } else {
-        cfg.apply()?;
-    }
+        .level(LevelFilter::Debug)
+        .chain(fern::log_file(&log_name)?)
+        .apply()?;
 
     Ok(log_name)
 }
