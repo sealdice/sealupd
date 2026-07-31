@@ -11,7 +11,7 @@ For a full definition of acceptable arguments and flags, see `src/cli.rs`.
 # Development
 
 > [!WARNING]
-> Please use the 2024 Edition of Rust (version 1.85+) when working on this project.
+> Please use the 2024 Edition of Rust (version 1.88+) when working on this project.
 
 ## Style Guides
 
@@ -34,7 +34,7 @@ For a full definition of acceptable arguments and flags, see `src/cli.rs`.
 
 - ~~We might need a graceful way to log and print information rather than littering `debug!()` and `println!()` everywhere.~~
 
-- The current implementation of `proc::wait()` is the best we can do, but feedback we got from [seal-updater] proves it is not always reliable.
+- ~~The current implementation of `proc::wait()` is the best we can do, but feedback we got from [seal-updater] proves it is not always reliable.~~
 
 [SealDice]: https://github.com/sealdice
 [seal-updater]: https://github.com/sealdice/seal-updater

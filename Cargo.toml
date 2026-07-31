@@ -1,6 +1,6 @@
 [package]
 name = "sealupd"
-version = "0.1.8"
+version = "0.1.9"
 edition = "2024"
 
 [profile.release]
@@ -24,7 +24,7 @@ chrono = "0.4.42"
 
 # Archive management
 zip = "6.0.0"
-tar = "0.4.45"
+tar = "0.4.46"
 flate2 = "1.1.4"
 
 [target.'cfg(windows)'.build-dependencies]
