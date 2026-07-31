@@ -23,8 +23,7 @@ fn run() -> i32 {
     logger.console_success("终端日志开始记录");
 
     if CLI_ARGS.pid != 0 {
-        logger.batch_verbose(format_args!("等待进程 {} 退出", CLI_ARGS.pid));
-        if !proc::wait_process(CLI_ARGS.pid, 30, &logger) {
+        if !proc::wait_process(CLI_ARGS.pid, &logger) {
             logger.batch_error("经等待进程仍未退出, 为避免错误, 中止操作");
             return 1;
         }

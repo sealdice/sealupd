@@ -2,6 +2,7 @@ use std::{
     io,
     path::Path,
     process::{self, Command},
+    sync::mpsc,
     thread,
     time::Duration,
 };
@@ -13,9 +14,11 @@ use sysinfo::{Pid, ProcessRefreshKind, ProcessesToUpdate, System};
 
 use crate::{consts::CLI_ARGS, log::Logger};
 
+const PROCESS_WAIT_TIMEOUT: Duration = Duration::from_secs(30);
+
 /// Waits for the process with the given PID to terminate. Returns true if the process terminates
 /// or the target PID belongs to this process.
-pub fn wait_process(pid: u32, max_retries: usize, logger: &Logger) -> bool {
+pub fn wait_process(pid: u32, logger: &Logger) -> bool {
     let target_pid = Pid::from_u32(pid);
     let self_pid = Pid::from_u32(process::id());
 
@@ -28,29 +31,43 @@ pub fn wait_process(pid: u32, max_retries: usize, logger: &Logger) -> bool {
     let processes_to_update = ProcessesToUpdate::Some(&pid_list);
 
     let mut sys = System::new();
-    let mut retries = 0;
+    sys.refresh_processes_specifics(processes_to_update, true, ProcessRefreshKind::nothing().without_tasks());
 
-    loop {
-        sys.refresh_processes_specifics(processes_to_update, true, ProcessRefreshKind::nothing());
+    let Some(process) = sys.process(target_pid) else {
+        logger.batch_verbose(format_args!("进程 {} 已不存在, 推断已经结束", target_pid));
+        return true;
+    };
 
-        let Some(process) = sys.process(target_pid) else {
-            logger.batch_verbose(format_args!("进程 {} 已不存在, 推断已经结束", target_pid));
-            return true;
-        };
+    let start_time = process.start_time();
+    logger.batch_info(format_args!(
+        "等待进程 {} ({})，超时: 30s",
+        target_pid,
+        process.name().to_string_lossy()
+    ));
 
-        if retries == max_retries {
-            return false;
-        }
+    let (sender, receiver) = mpsc::sync_channel(1);
+    thread::spawn(move || {
+        let exit_status = sys.process(target_pid).and_then(|process| process.wait());
+        _ = sender.send(exit_status.is_some());
+    });
 
-        retries += 1;
-        logger.batch_verbose(format_args!(
-            "找到进程 {}, 尝试次数 {}/{}",
-            process.name().to_string_lossy(),
-            retries,
-            max_retries
-        ));
-        thread::sleep(Duration::from_secs(1));
+    match receiver.recv_timeout(PROCESS_WAIT_TIMEOUT) {
+        Ok(true) => true,
+        Ok(false) | Err(_) => original_process_exited(target_pid, start_time),
     }
+}
+
+fn original_process_exited(pid: Pid, start_time: u64) -> bool {
+    let pid_list = [pid];
+    let mut sys = System::new();
+    sys.refresh_processes_specifics(
+        ProcessesToUpdate::Some(&pid_list),
+        true,
+        ProcessRefreshKind::nothing().without_tasks(),
+    );
+
+    sys.process(pid)
+        .is_none_or(|process| process.start_time() != start_time)
 }
 
 #[cfg(windows)]
